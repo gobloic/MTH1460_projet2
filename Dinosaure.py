@@ -3,12 +3,13 @@ from numpy import random
 import math
 
 class Dinosaure:
-    def __init__(self, rayon,vitesse,position):
-        self.rayon = rayon #rayon de courbure minimal de sa trajectoire
+    def __init__(self, rayonMin,vitesse,position):
+        self.rayonMin = rayonMin #rayon de courbure minimal de sa trajectoire
         self.vitesse = vitesse/3.6 # vitesse maximale du dinosaure input en km/h, convertie directement en m/s
         self.position = position # position actuelle du dinosaure
         self.lastPosition = np.array([0,0]) ## dernière position, pour calculer la direction. Initialisée à (0,0) ??
         self.direction = np.subtract(self.position, self.lastPosition) # direction actuelle du dinosaure
+        self.rayon = rayonMin
 
 
     def __str__(self):
@@ -17,28 +18,37 @@ class Dinosaure:
 
     def seDeplacer(self,destination,dt):
         cible = np.subtract(destination,self.position)
-        # deviation = np.arctan2(cible[1], cible[0]) - np.arctan2(self.direction[1], self.direction[0]);
-
         plusOuMoins = np.sign(np.linalg.det(np.array([cible,self.direction])))
         deviation = plusOuMoins * np.arccos(np.dot(cible,self.direction)/(np.linalg.norm(cible)*np.linalg.norm(self.direction)))
-
+        angleMax = 1/2 * self.vitesse*dt/self.rayon;
         signe = plusOuMoins
-        # si la cible se trouve dans l'un des cercles autour du dinosaure, il faut tourner autour de l'autre
-        # cercle. Note: ici c'est pas ça, le centre n'est pas la position du dino. !!!! plus tard
-        if (destination[0] - self.centre(signe)[0])**2 + (destination[1] - self.centre(signe)[1])**2 <= self.rayon**2:
-            print("***** attention cible proche, possibilité de changer de cercle ***")
-            print("centre + ",self.centre(1))
-            print("centre - ",self.centre(-1))
-            print("destination",destination)
-            self.rotate(-signe,dt)
 
-        if deviation == 0:
-            signe = 0
-        # si les deux vecteurs sont colinéaires, regarder si ils sont de même sens ou pas
-        if signe == 0:
-            if np.dot(cible,self.direction) < 0:
-                signe = -1;
-        self.rotate(signe,dt)
+        if np.abs(deviation) < angleMax:
+            self.rayon = 1/2 * self.vitesse*dt/np.abs(deviation)
+            # print("rayon rotation",self.rayon)
+            self.rotate(signe,dt)
+        else:
+            self.rayon = self.rayonMin
+            # print("rayon rotation",self.rayon)
+
+            # # si la cible se trouve dans l'un des cercles autour du dinosaure, il faut tourner autour de l'autre
+            # # cercle. HMMMMMMMMMMMMM CAMARCHE PAS COMME JE VOUDRAIS
+            # centrePlus = self.centre(+1)
+            # centreMoins = self.centre(-1)
+            # if (np.linalg.norm(centrePlus-destination))**2 <= self.rayon**2 or (np.linalg.norm(centreMoins-destination))**2 <= self.rayon**2:
+            #     print("BBBBBB*********")
+            #     if (np.linalg.norm(centrePlus-destination))**2 <= self.rayon**2:
+            #         signe = -1
+            #     if (np.linalg.norm(centreMoins-destination))**2 <= self.rayon**2:
+            #         signe = +1
+
+            if deviation == 0:
+                signe = 0
+            # si les deux vecteurs sont colinéaires, regarder si ils sont de même sens ou pas
+            if signe == 0:
+                if np.dot(cible,self.direction) < 0:
+                    signe = -1;
+            self.rotate(signe,dt)
 
     def centre(self,signe):
         px,py = self.position
@@ -58,7 +68,7 @@ class Dinosaure:
             dx,dy = self.direction
             r = self.rayon
             ox,oy = self.centre(signe)
-            print("centre choisi",np.array([ox,oy]))
+            # print("centre choisi",np.array([ox,oy]))
             angle = -signe*self.vitesse*dt/r
 
             #Rotation du point
