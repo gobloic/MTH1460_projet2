@@ -10,10 +10,14 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 dinosaure1 = Dinosaure(0.5,50,np.array([0,0]))
-dinosaure1.direction = np.array([0,1])
+dinosaure2 = Dinosaure(1.5,60,np.array([-10,0]))
 
-dinosaure2 = Dinosaure(1.5,60,np.array([5,5]))
-dinosaure2.direction = np.array([0,1])
+dinosaure3 = Dinosaure(1.5,60,np.array([15,20]))
+
+# dinosaure1.direction = dinosaure1.position - dinosaure2.position
+dinosaure1.direction = dinosaure1.position - dinosaure2.position
+dinosaure2.direction = dinosaure1.position - dinosaure2.position
+dinosaure3.direction = dinosaure1.position - dinosaure3.position
 
 print(dinosaure1)
 
@@ -21,38 +25,88 @@ xPos = [dinosaure1.getX()]
 yPos = [dinosaure1.getY()]
 xPos2 = [dinosaure2.getX()]
 yPos2 = [dinosaure2.getY()]
+xPos3 = [dinosaure3.getX()]
+yPos3 = [dinosaure3.getY()]
+
+
+# destination = np.array([1.5,50])
+
+separationVec = [np.linalg.norm(dinosaure1.position - dinosaure2.position)]
 
 angle = []
 
 tmax = 15
 t = 0
 dt = 0.01
-destination = np.array([0.5,0])
-distanceDecision = 1.5
-rayonCapture = 1
-anticipation = 5
+destination = dinosaure1.position + 1000*(-dinosaure2.position + dinosaure1.position)
+distanceDecision = 1.7
+rayonCapture = 1.5
+anticipation = 2
+compteur = 0
+event = 0
+
+# dépend de la statégie, peut valoir 90,180,270 ... au besoin
+angleVirageProie = np.radians(270)
+tempsProcedure = np.round(angleVirageProie*dinosaure1.rayonMin/(2*dinosaure1.vitesse*dt))
+signeFixe = 1.0
 while (t<tmax):
     # print("---")
     t += dt
 
-    # destination de la proie instinctive : opposé à la position du prédateur par rapport à la proie
-    destination = 2*dinosaure1.position-dinosaure2.position
+    if np.linalg.norm(dinosaure1.position - destination) <= 1e-2:
+        break
 
-    # si le prédateur est trop proche, prendre la décision de changer de direction
-    if np.linalg.norm(dinosaure1.position-dinosaure2.position) <= distanceDecision:
+    if np.linalg.norm(dinosaure1.position - dinosaure2.position) <= distanceDecision:
         destination = dinosaure1.position + 1000*np.array([-dinosaure1.direction[1],dinosaure1.direction[0]])
 
-    # le vélociraptor court en fractionné ... s'arrête pendant 3 secondes toutes les 15 secondes
-    if t%(15+3) <= (15):
-        dinosaure2.vitesse = 60/3.6
-    else:
-        dinosaure2.vitesse = 0
+    # destination = 2*dinosaure1.position - dinosaure2.position
+
+    print(np.linalg.norm(dinosaure1.direction))
+    # declencheur =  (np.linalg.norm(dinosaure1.position - dinosaure2.position) <= distanceDecision) # (np.linalg.norm(dinosaure1.position - dinosaure3.position) <= distanceDecision) or
+    # if declencheur:
+    #     if compteur <= 0:
+    #         compteur = tempsProcedure
+    #     # print("l'évènenement déclencheur a lieu")
+    #     event += 1
+    #     firstTime = (event == 1)
+    #     if firstTime:
+    #         # print("c'est la première fois, il faut changer. La procédure va durer ",tempsProcedure," itérations")
+    #         compteur = tempsProcedure
+    #         signeFixe = (2*np.round(np.random.rand())-1)
+    #         destination = dinosaure1.position + signeFixe\
+    #                       *1000*np.array([-dinosaure1.direction[1],dinosaure1.direction[0]])
+    #     else:
+    #         compteur -= 1
+    #         # print("c'est pas la première fois, ne fais rien. Ce sera le cas pour encore ",compteur, " itérations")
+    # else:
+    #     if compteur > 0:
+    #         compteur -= 1
+    #         # print("l'événement déclencheur n'a pas lieu mais il reste du temps à la procédure : ", compteur)
+    #         destination = dinosaure1.position + signeFixe \
+    #                       *1000*np.array([-dinosaure1.direction[1],dinosaure1.direction[0]])
+    #
+    #     else:
+    #         # destination = 2*dinosaure1.position - dinosaure2.position
+    #         event = 0
+            # compteur = tempsProcedure
+    # print(destination)
+
+
+    #
+    # # destination de la proie instinctive : opposé à la position du prédateur par rapport à la proie
+    # destination = dinosaure1.position + 1000* (2*dinosaure1.position - dinosaure3.position - dinosaure2.position)
+    # # si le prédateur est trop proche, prendre la décision de changer de direction
+    # if np.linalg.norm(dinosaure1.position - dinosaure2.position) < distanceDecision:
+    #     destination = dinosaure1.position + 1000*np.array([-dinosaure1.direction[1],dinosaure1.direction[0]])
+    #
+
+
 
     # dinosaure1 (proie) se déplace à destination de sa destination
     dinosaure1.seDeplacer(destination,dt)
 
     # si la proie est dans le rayon de captue du prédateur, elle se fait manger. fin de la simulation
-    if np.linalg.norm(dinosaure2.position - dinosaure1.position) <= rayonCapture:
+    if (np.linalg.norm(dinosaure2.position - dinosaure1.position) <= rayonCapture) or (np.linalg.norm(dinosaure3.position - dinosaure1.position) <= rayonCapture):
         print("crounch")
         # tfinal = t
         # print('tfinal',tfinal,'tmax',tmax)
@@ -65,13 +119,22 @@ while (t<tmax):
     # dinosaure1.seDeplacer(dinosaure2.position - dinosaure2.vitesse*dt*dinosaure2.direction,dt)
     ## prédateur instinctif : se déplace vers la proie
     dinosaure2.seDeplacer(dinosaure1.position,dt)
+    # dinosaure3.seDeplacer(dinosaure1.position,dt)
     ## prédateur prédictif : anticipe
     # dinosaure2.seDeplacer(dinosaure1.position + anticipation*dinosaure1.direction*dinosaure1.vitesse*dt,dt)
+
 
     xPos.append(dinosaure1.getX())
     yPos.append(dinosaure1.getY())
     xPos2.append(dinosaure2.getX())
     yPos2.append(dinosaure2.getY())
+    xPos3.append(dinosaure3.getX())
+    yPos3.append(dinosaure3.getY())
+    separationVec.append(np.linalg.norm(dinosaure1.position - dinosaure2.position))
+
+
+
+
 
 
 ############################################################################
@@ -102,6 +165,7 @@ if True:
 
     data = np.array([np.vstack((xPos, yPos))])
     data2 = np.array([np.vstack((xPos2, yPos2))])
+    data3 = np.array([np.vstack((xPos3, yPos3))])
 
     n=int(np.round(tmax/dt))
     # Create line objects:
@@ -111,35 +175,58 @@ if True:
     auv2 = [ax.plot(data2[0][0,0:2], data2[0][1,0:2],   marker=(5, 2),color='b')[0]]
     trj2 = [ax.plot(data2[0][0,0:2], data2[0][1,0:2],':b')[0]]
 
+    auv3 = [ax.plot(data3[0][0,0:2], data3[0][1,0:2],   marker=(4,2),color='b')[0]]
+    trj3 = [ax.plot(data3[0][0,0:2], data3[0][1,0:2],':b')[0]]
+
     # ax.plot(0,300,'xr')
     # ax.plot(destination[0],destination[1],'xr')
 
+    #
+    # circle1 = plt.Circle((0.5, 0), 0.5, color='r',alpha=0.5)
+    # circle2 = plt.Circle((-0.5, 0), 0.5, color='b',alpha=0.5)
+    # ax.add_patch(circle1)
+    # ax.add_patch(circle2)
+
+
     # Setthe axes properties
-    ax.set_xlim([min(1.15*min(data[0,0,:]),1.15*min(data2[0,0,:])), max(1.15*max(data[0,0,:]),1.15*max(data2[0,0,:]))])
+    ax.set_xlim([min(1.15*min(data[0,0,:]),1.15*min(data2[0,0,:]),1.15*min(data3[0,0,:])), max(1.15*max(data[0,0,:]),1.15*max(data2[0,0,:]),1.15*max(data3[0,0,:]))])
     ax.set_xlabel('X')
 
-    ax.set_ylim([min(1.15*min(data[0,1,:]),1.15*min(data2[0,1,:])), max(1.15*max(data[0,1,:]),1.15*max(data2[0,1,:]))])
+    ax.set_ylim([min(1.15*min(data[0,1,:]),1.15*min(data2[0,1,:]),1.15*min(data3[0,1,:])), max(1.15*max(data[0,1,:]),1.15*max(data2[0,1,:]),1.15*max(data3[0,1,:]))])
     ax.set_ylabel('Y')
+
+    # ax.set_ylim([-1,2])
+    # ax.set_xlim([-1.5,1.5])
+    # ax.set_axis_off()
 
     # ax.set_zlim3d([-1.0, 1.0])
     # ax.set_zlabel('Z')
 
-    ax.set_title('2D Test')
+    # ax.set_title('2D Test')
 
     # Creating the Animation object
     ani_auv = animation.FuncAnimation(fig, update_auv, n, fargs=(data, auv),
-                                      interval=1, blit=False, repeat=False) #repeat=False,
+                                      interval=n/100, blit=False, repeat=False) #repeat=False,
     ani_trj = animation.FuncAnimation(fig, update_trj, n, fargs=(data, trj),
-                                      interval=1, blit=False, repeat=False) #repeat=False,
+                                      interval=n/100, blit=False, repeat=False) #repeat=False,
 
     ani_auv2 = animation.FuncAnimation(fig, update_auv, n, fargs=(data2, auv2),
-                                      interval=1, blit=False, repeat=False) #repeat=False,
+                                      interval=n/100, blit=False, repeat=False) #repeat=False,
     ani_trj2 = animation.FuncAnimation(fig, update_trj, n, fargs=(data2, trj2),
-                                      interval=1, blit=False, repeat=False) #repeat=False,
+                                      interval=n/100, blit=False, repeat=False) #repeat=False,
+
+    ani_auv3 = animation.FuncAnimation(fig, update_auv, n, fargs=(data3, auv3),
+                                       interval=n/100, blit=False, repeat=False) #repeat=False,
+    ani_trj3 = animation.FuncAnimation(fig, update_trj, n, fargs=(data3, trj3),
+                                       interval=n/100, blit=False, repeat=False) #repeat=False,
 
     plt.show()
+    # fig.savefig("./figures/testDroiteHorsCercle.png", dpi=600)
 
-    #
-    # fig = plt.figure()
-    # plt.plot(angle)
-    # plt.show()
+
+    fig = plt.figure()
+    plt.plot(separationVec,"+")
+
+    plt.plot(distanceDecision*np.ones(len(separationVec)),'r')
+    plt.plot(rayonCapture*np.ones(len(separationVec)),'b')
+    plt.show()
