@@ -10,6 +10,7 @@ class Dinosaure:
         self.lastPosition = np.array([0,0]) ## dernière position, pour calculer la direction. Initialisée à (0,0) ??
         self.direction = np.subtract(self.position, self.lastPosition) # direction actuelle du dinosaure
         self.rayon = rayonMin
+        self.iterationsAvantFinVirage = -1
 
 
     def __str__(self):

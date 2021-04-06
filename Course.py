@@ -12,12 +12,15 @@ import matplotlib.animation as animation
 dinosaure1 = Dinosaure(0.5,50,np.array([0,0]))
 dinosaure2 = Dinosaure(1.5,60,np.array([-10,0]))
 
-dinosaure3 = Dinosaure(1.5,60,np.array([15,20]))
+dinosaure3 = Dinosaure(1.5,60,np.array([10,20]))
 
 # dinosaure1.direction = dinosaure1.position - dinosaure2.position
 dinosaure1.direction = dinosaure1.position - dinosaure2.position
+dinosaure1.direction = dinosaure1.direction/(np.linalg.norm(dinosaure1.direction))
 dinosaure2.direction = dinosaure1.position - dinosaure2.position
+dinosaure2.direction = dinosaure2.direction/(np.linalg.norm(dinosaure2.direction))
 dinosaure3.direction = dinosaure1.position - dinosaure3.position
+dinosaure3.direction = dinosaure3.direction/(np.linalg.norm(dinosaure3.direction))
 
 print(dinosaure1)
 
@@ -27,6 +30,7 @@ xPos2 = [dinosaure2.getX()]
 yPos2 = [dinosaure2.getY()]
 xPos3 = [dinosaure3.getX()]
 yPos3 = [dinosaure3.getY()]
+vit1 = [np.linalg.norm(dinosaure1.direction)]
 
 
 # destination = np.array([1.5,50])
@@ -39,29 +43,43 @@ tmax = 15
 t = 0
 dt = 0.01
 destination = dinosaure1.position + 1000*(-dinosaure2.position + dinosaure1.position)
-distanceDecision = 1.7
-rayonCapture = 1.5
+distanceDecision = 2
+rayonCapture = 0.2
 anticipation = 2
 compteur = 0
 event = 0
 
+delai = -1
+
 # dépend de la statégie, peut valoir 90,180,270 ... au besoin
-angleVirageProie = np.radians(270)
-tempsProcedure = np.round(angleVirageProie*dinosaure1.rayonMin/(2*dinosaure1.vitesse*dt))
+angleVirageProie = np.radians(45)
+tempsProcedure = np.round(angleVirageProie*2*dinosaure1.rayonMin/(dinosaure1.vitesse*dt))
+print("tpsProce",tempsProcedure)
 signeFixe = 1.0
 while (t<tmax):
-    # print("---")
+    print("---")
     t += dt
+    dinosaure1.iterationsAvantFinVirage -= 1
+    delai -= 1
+    print(dinosaure1.iterationsAvantFinVirage)
 
-    if np.linalg.norm(dinosaure1.position - destination) <= 1e-2:
-        break
 
-    if np.linalg.norm(dinosaure1.position - dinosaure2.position) <= distanceDecision:
+    if (dinosaure1.iterationsAvantFinVirage < 0) and np.linalg.norm(dinosaure1.position - dinosaure2.position) <= distanceDecision:  # (np.linalg.norm(dinosaure1.position - dinosaure3.position) <= distanceDecision) or
+        # destination = dinosaure1.position + 1000*np.array([-dinosaure1.direction[1],dinosaure1.direction[0]])
+        dinosaure1.iterationsAvantFinVirage = tempsProcedure
+        delai = 200
+
+    if dinosaure1.iterationsAvantFinVirage > 0:
         destination = dinosaure1.position + 1000*np.array([-dinosaure1.direction[1],dinosaure1.direction[0]])
+    else :
+        destination = dinosaure1.position + 1000 * dinosaure1.direction  # + 1000*(dinosaure1.position - dinosaure2.position )
+
+
+
 
     # destination = 2*dinosaure1.position - dinosaure2.position
 
-    print(np.linalg.norm(dinosaure1.direction))
+    # print(np.linalg.norm(dinosaure1.direction))
     # declencheur =  (np.linalg.norm(dinosaure1.position - dinosaure2.position) <= distanceDecision) # (np.linalg.norm(dinosaure1.position - dinosaure3.position) <= distanceDecision) or
     # if declencheur:
     #     if compteur <= 0:
@@ -88,8 +106,8 @@ while (t<tmax):
     #     else:
     #         # destination = 2*dinosaure1.position - dinosaure2.position
     #         event = 0
-            # compteur = tempsProcedure
-    # print(destination)
+    #         compteur = tempsProcedure
+    # # print(destination)
 
 
     #
@@ -130,6 +148,7 @@ while (t<tmax):
     yPos2.append(dinosaure2.getY())
     xPos3.append(dinosaure3.getX())
     yPos3.append(dinosaure3.getY())
+    vit1.append(np.linalg.norm(dinosaure1.direction))
     separationVec.append(np.linalg.norm(dinosaure1.position - dinosaure2.position))
 
 
@@ -170,7 +189,7 @@ if True:
     n=int(np.round(tmax/dt))
     # Create line objects:
     auv = [ax.plot(data[0][0,0:2], data[0][1,0:2],  'ro')[0]]
-    trj = [ax.plot(data[0][0,0:2], data[0][1,0:2],':r')[0]]
+    trj = [ax.plot(data[0][0,0:2], data[0][1,0:2],'+r')[0]]
 
     auv2 = [ax.plot(data2[0][0,0:2], data2[0][1,0:2],   marker=(5, 2),color='b')[0]]
     trj2 = [ax.plot(data2[0][0,0:2], data2[0][1,0:2],':b')[0]]
@@ -204,6 +223,15 @@ if True:
 
     # ax.set_title('2D Test')
 
+
+    # ####### show result
+    #
+    # fig = plt.figure()
+    # plt.plot(data[0][0,0:2], data[0][1,0:2],':r')
+    # plt.show()
+
+
+
     # Creating the Animation object
     ani_auv = animation.FuncAnimation(fig, update_auv, n, fargs=(data, auv),
                                       interval=n/100, blit=False, repeat=False) #repeat=False,
@@ -224,9 +252,9 @@ if True:
     # fig.savefig("./figures/testDroiteHorsCercle.png", dpi=600)
 
 
-    fig = plt.figure()
-    plt.plot(separationVec,"+")
-
-    plt.plot(distanceDecision*np.ones(len(separationVec)),'r')
-    plt.plot(rayonCapture*np.ones(len(separationVec)),'b')
-    plt.show()
+    # fig = plt.figure()
+    # plt.plot(separationVec,"+")
+    #
+    # plt.plot(distanceDecision*np.ones(len(separationVec)),'r')
+    # plt.plot(rayonCapture*np.ones(len(separationVec)),'b')
+    # plt.show()
