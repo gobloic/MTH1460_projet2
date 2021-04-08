@@ -10,7 +10,7 @@ class Dinosaure:
         self.lastPosition = np.array([0,0]) ## dernière position, pour calculer la direction. Initialisée à (0,0) ??
         self.direction = np.subtract(self.position, self.lastPosition) # direction actuelle du dinosaure
         self.rayon = rayonMin
-        self.iterationsAvantFinVirage = -1
+
 
 
     def __str__(self):
@@ -25,16 +25,17 @@ class Dinosaure:
         signe = plusOuMoins
 
         if np.abs(deviation) < angleMax:
-            if deviation == 0:
-                print("tout droit!!")
+            if np.round(np.degrees(deviation),3) == 0:
+                # print("tout droit!!")
                 signe = 0
                 if np.dot(cible,self.direction) < 0:
                     signe = -1;
+                else:
+                    self.translate(dt)
             else:
-                self.rayon = 1/2 * self.vitesse*dt/np.abs(deviation)
-            # print("rayon rotation",self.rayon)
-            self.rotate(signe,dt)
-            # print (np.subtract(destination,self.position)/np.linalg.norm(np.subtract(destination,self.position)) - self.direction/np.linalg.norm(self.direction))
+                self.rayon = 1/1 * self.vitesse*dt/np.abs(deviation)
+                self.rotate(signe,dt)
+
         else:
             self.rayon = self.rayonMin
             # print("rayon rotation",self.rayon)
@@ -44,19 +45,21 @@ class Dinosaure:
             centrePlus = self.centre(+1)
             centreMoins = self.centre(-1)
             if (np.linalg.norm(centrePlus-destination))**2 <= self.rayon**2 or (np.linalg.norm(centreMoins-destination))**2 <= self.rayon**2:
-                print("BBBBBB*********")
+                # print("BBBBBB*********")
                 if (np.linalg.norm(centrePlus-destination))**2 <= self.rayon**2:
                     signe = -1
                 if (np.linalg.norm(centreMoins-destination))**2 <= self.rayon**2:
                     signe = +1
 
-            if deviation == 0:
-                signe = 0
-            # si les deux vecteurs sont colinéaires, regarder si ils sont de même sens ou pas
-            if signe == 0:
-                if np.dot(cible,self.direction) < 0:
-                    signe = -1;
+            # if deviation == 0:
+            #     signe = 0
+            # # si les deux vecteurs sont colinéaires, regarder si ils sont de même sens ou pas
+            # if signe == 0:
+            #     if np.dot(cible,self.direction) < 0:
+            #         signe = -1;
             self.rotate(signe,dt)
+
+
 
     def centre(self,signe):
         px,py = self.position
@@ -93,7 +96,7 @@ class Dinosaure:
     def translate(self,dt): # se déplacer tout droit à vitesse constante
         self.lastPosition = self.position.copy()
         self.position = self.position + self.direction/np.linalg.norm(self.direction) * (self.vitesse*dt)
-        print("**translate")
+        # print("**translate")
 
     def getX(self):
         return self.position[0]
