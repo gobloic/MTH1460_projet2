@@ -26,10 +26,9 @@ class Dinosaure:
 
         if np.abs(deviation) < angleMax:
             if np.round(np.degrees(deviation),3) == 0:
-                # print("tout droit!!")
-                signe = 0
                 if np.dot(cible,self.direction) < 0:
                     signe = -1;
+                    self.rotate(signe,dt)
                 else:
                     self.translate(dt)
             else:
@@ -50,13 +49,8 @@ class Dinosaure:
                     signe = -1
                 if (np.linalg.norm(centreMoins-destination))**2 <= self.rayon**2:
                     signe = +1
-
-            # if deviation == 0:
-            #     signe = 0
-            # # si les deux vecteurs sont colinéaires, regarder si ils sont de même sens ou pas
-            # if signe == 0:
-            #     if np.dot(cible,self.direction) < 0:
-            #         signe = -1;
+            # print("signe",signe)
+            # if signe != 0:
             self.rotate(signe,dt)
 
 
@@ -72,7 +66,9 @@ class Dinosaure:
     ## signe - : tourner vers la droite // signe + : tourner vers la gauche
     def rotate(self,signe,dt): # tourner en un incrément de temps
         if signe == 0:
+            # print(" §§ ça ne devrait pas être appelé")
             self.translate(dt)
+            # pass
         else:
             self.lastPosition = self.position.copy()
             px,py = self.position

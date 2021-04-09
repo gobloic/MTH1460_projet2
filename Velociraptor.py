@@ -5,8 +5,9 @@ from Dinosaure import Dinosaure
 
 class Velociraptor(Dinosaure):
     def __init__(self,position):
-        super().__init__(1.5,60,position)
-        self.rayonCapture = 0.6 #ref : A4
+        #accélérations de 20g : 1.5m // accélération de 4.72g : 6 m
+        super().__init__(6,60,position)
+        self.rayonCapture = 1.5 #1.5 #on peut le changer. Mais c'est le
 
 
     def poursuivre(self,proie,anticipation,dt):

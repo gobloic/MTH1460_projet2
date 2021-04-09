@@ -10,7 +10,8 @@ from Dinosaure import Dinosaure
 class Thescelosaurus(Dinosaure):
 
     def __init__(self,position):
-        super().__init__(0.5,50,position)
+        #accélérations de 20g : 0.5m // accélération de 10g : 2m
+        super().__init__(2,50,position)
         self.isTurning = False
         self.signeFixe = 1.0
         self.destination = self.position + 1000*self.direction
@@ -25,7 +26,7 @@ class Thescelosaurus(Dinosaure):
 
         if strategie == "naive":
             self.destination = 2*self.position - predateur1.position
-            distanceDecision = predateur1.rayonCapture * 3
+            distanceDecision = 2
 
             if np.linalg.norm(self.position - predateur1.position) <= distanceDecision and not self.isTurning:
                 self.rayon = self.rayonMin
@@ -40,23 +41,25 @@ class Thescelosaurus(Dinosaure):
                 self.compteurTour = 0
 
         elif strategie == "90":
-            distanceDecision = 3.5
+            distanceDecision = 6
 
             if not self.isTurning:
                 self.destination = self.position + 1000*self.direction
 
-            if self.alignedWithDestination() and self.isTurning:
-                self.isTurning = False
 
             if np.linalg.norm(self.position - predateur1.position) <= distanceDecision and not self.isTurning:
                 self.signeFixe = 2*np.round(np.random.rand()) - 1
-                angleFixe = 90 #180*np.random.rand()
+                angleFixe = 90
                 self.destination = self.newDestination(self.signeFixe*angleFixe)
                 # self.isTurning = True
                 # predateur1.direction = np.array([0,0]) #arrêter le prédateur pour voir
 
 
             self.seDeplacer(dt)
+
+            if self.alignedWithDestination():
+                self.isTurning = False
+
 
 
 
@@ -106,8 +109,8 @@ class Thescelosaurus(Dinosaure):
         DY = math.sin(angle) * (dx) + math.cos(angle) * (dy)
         u = np.array([DX,DY])
         u = u/np.linalg.norm(u)
-        print("vecteur u : ",u)
-        print("u.d = ", np.dot(u,self.direction))
+        # print("vecteur u : ",u)
+        # print("u.d = ", np.dot(u,self.direction))
 
         return M + 1000*u
 
@@ -118,14 +121,12 @@ class Thescelosaurus(Dinosaure):
     def translate(self,dt):
         self.isTurning = False
         super().translate(dt)
-
-        print("override Translate")
+        # print("override Translate")
 
     def rotate(self,signe,dt):
         self.isTurning = True
         super().rotate(signe,dt)
-
-        print("Override Rotate")
+        # print("Override Rotate")
 
     def seDeplacer(self,dt):
         super().seDeplacer(self.destination,dt)
