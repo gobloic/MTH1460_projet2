@@ -12,43 +12,48 @@ class Dinosaure:
         self.rayon = rayonMin
 
 
+
     def __str__(self):
         return "**** Dinosaure: rayon: %.1f m, vitesse max : %.2f m/s = %.2f km/h \n     Position actuelle : %s , direction : %s" \
                % (self.rayon,self.vitesse,3.6*self.vitesse,self.position,self.direction)
 
     def seDeplacer(self,destination,dt):
-        cible = np.subtract(destination,self.position)
+        cible = destination - self.position
         plusOuMoins = np.sign(np.linalg.det(np.array([cible,self.direction])))
         deviation = plusOuMoins * np.arccos(np.dot(cible,self.direction)/(np.linalg.norm(cible)*np.linalg.norm(self.direction)))
-        angleMax = 1/2 * self.vitesse*dt/self.rayon;
+        angleMax = 1/2 * self.vitesse*dt/self.rayonMin;
         signe = plusOuMoins
 
         if np.abs(deviation) < angleMax:
-            self.rayon = 1/2 * self.vitesse*dt/np.abs(deviation)
-            # print("rayon rotation",self.rayon)
-            self.rotate(signe,dt)
+            if np.round(np.degrees(deviation),3) == 0:
+                if np.dot(cible,self.direction) < 0:
+                    signe = -1;
+                    self.rotate(signe,dt)
+                else:
+                    self.translate(dt)
+            else:
+                self.rayon = 1/1 * self.vitesse*dt/np.abs(deviation)
+                self.rotate(signe,dt)
+
         else:
             self.rayon = self.rayonMin
             # print("rayon rotation",self.rayon)
 
-            # # si la cible se trouve dans l'un des cercles autour du dinosaure, il faut tourner autour de l'autre
-            # # cercle. HMMMMMMMMMMMMM CAMARCHE PAS COMME JE VOUDRAIS
-            # centrePlus = self.centre(+1)
-            # centreMoins = self.centre(-1)
-            # if (np.linalg.norm(centrePlus-destination))**2 <= self.rayon**2 or (np.linalg.norm(centreMoins-destination))**2 <= self.rayon**2:
-            #     print("BBBBBB*********")
-            #     if (np.linalg.norm(centrePlus-destination))**2 <= self.rayon**2:
-            #         signe = -1
-            #     if (np.linalg.norm(centreMoins-destination))**2 <= self.rayon**2:
-            #         signe = +1
-
-            if deviation == 0:
-                signe = 0
-            # si les deux vecteurs sont colinéaires, regarder si ils sont de même sens ou pas
-            if signe == 0:
-                if np.dot(cible,self.direction) < 0:
-                    signe = -1;
+            # si la cible se trouve dans l'un des cercles autour du dinosaure, il faut tourner autour de l'autre
+            # cercle. c'est bon ça marche comme je veux :)
+            centrePlus = self.centre(+1)
+            centreMoins = self.centre(-1)
+            if (np.linalg.norm(centrePlus-destination))**2 <= self.rayon**2 or (np.linalg.norm(centreMoins-destination))**2 <= self.rayon**2:
+                # print("BBBBBB*********")
+                if (np.linalg.norm(centrePlus-destination))**2 <= self.rayon**2:
+                    signe = -1
+                if (np.linalg.norm(centreMoins-destination))**2 <= self.rayon**2:
+                    signe = +1
+            # print("signe",signe)
+            # if signe != 0:
             self.rotate(signe,dt)
+
+
 
     def centre(self,signe):
         px,py = self.position
@@ -61,7 +66,9 @@ class Dinosaure:
     ## signe - : tourner vers la droite // signe + : tourner vers la gauche
     def rotate(self,signe,dt): # tourner en un incrément de temps
         if signe == 0:
+            # print(" §§ ça ne devrait pas être appelé")
             self.translate(dt)
+            # pass
         else:
             self.lastPosition = self.position.copy()
             px,py = self.position
@@ -80,11 +87,12 @@ class Dinosaure:
             DX = math.cos(angle) * (dx) - math.sin(angle) * (dy)
             DY = math.sin(angle) * (dx) + math.cos(angle) * (dy)
             self.direction = np.array([DX,DY])
+            self.direction = self.direction/np.linalg.norm(self.direction)
 
     def translate(self,dt): # se déplacer tout droit à vitesse constante
         self.lastPosition = self.position.copy()
-        self.position = np.add(self.position, np.multiply(self.vitesse*dt, self.direction))
-        print("**translate")
+        self.position = self.position + self.direction/np.linalg.norm(self.direction) * (self.vitesse*dt)
+        # print("**translate")
 
     def getX(self):
         return self.position[0]

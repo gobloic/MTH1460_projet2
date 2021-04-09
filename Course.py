@@ -1,77 +1,105 @@
-from sympy import *
-from sympy.geometry import *
-from sympy.plotting import plot
 import numpy as np
 import math
 
-from Dinosaure import Dinosaure
-
+from Velociraptor import Velociraptor
+from Thescelosaurus import Thescelosaurus
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
-dinosaure1 = Dinosaure(0.5,50,np.array([0,0]))
-dinosaure1.direction = np.array([0,1])
 
-dinosaure2 = Dinosaure(1.5,60,np.array([5,5]))
-dinosaure2.direction = np.array([0,1])
+SMALL_SIZE = 18
+MEDIUM_SIZE = 20
+BIGGER_SIZE = 24
 
-print(dinosaure1)
+plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
+plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
-xPos = [dinosaure1.getX()]
-yPos = [dinosaure1.getY()]
-xPos2 = [dinosaure2.getX()]
-yPos2 = [dinosaure2.getY()]
 
-angle = []
+# minimum 15m maximum 42m ? Ziling ?
+distanceInitiale = 15 + (42-15) * np.random.rand()
+angleInitial = 2*math.pi*np.random.rand()
+
+proie = Thescelosaurus(np.array([10,10]))
+
+
+# position initiale aléatoire
+predateur1 = Velociraptor(np.array([proie.getX() + distanceInitiale*np.cos(angleInitial),proie.getY() +
+                                    distanceInitiale*np.sin(angleInitial)]))
+# predateur2 = Velociraptor(np.array([10,20]))
+
+crounch = False
+
+proie.direction = proie.position - predateur1.position
+proie.direction = proie.direction/(np.linalg.norm(proie.direction))
+predateur1.direction = proie.position - predateur1.position
+predateur1.direction = predateur1.direction/(np.linalg.norm(predateur1.direction))
+# predateur2.direction = proie.position - predateur2.position
+# predateur2.direction = predateur2.direction/(np.linalg.norm(predateur2.direction))
+
+
+
+xPos = [proie.getX()]
+yPos = [proie.getY()]
+xPos2 = [predateur1.getX()]
+yPos2 = [predateur1.getY()]
+# xPos3 = [predateur2.getX()]
+# yPos3 = [predateur2.getY()]
+
+separationVec = [np.linalg.norm(proie.position - predateur1.position)]
+signeVec = []
+
 
 tmax = 15
 t = 0
 dt = 0.01
-destination = np.array([0.5,0])
-distanceDecision = 1.5
-rayonCapture = 1
-anticipation = 5
+
+
+
+signeFixe = 1.0
 while (t<tmax):
     # print("---")
     t += dt
 
-    # destination de la proie instinctive : opposé à la position du prédateur par rapport à la proie
-    destination = 2*dinosaure1.position-dinosaure2.position
+    # proie fuit le spredateur selon la strategie choisie : "naive","90","faceAFace" (pas encore codé),"angleAleatoire"
+    proie.fuir(predateur1,strategie = "90",dt = dt)
+    # print("proie.signeFixe",proie.signeFixe)
 
-    # si le prédateur est trop proche, prendre la décision de changer de direction
-    if np.linalg.norm(dinosaure1.position-dinosaure2.position) <= distanceDecision:
-        destination = dinosaure1.position + 1000*np.array([-dinosaure1.direction[1],dinosaure1.direction[0]])
+    ## prédateur instinctif : se déplace vers la proie
+    predateur1.poursuivre(proie,anticipation = 3,dt = dt)
 
-    # le vélociraptor court en fractionné ... s'arrête pendant 3 secondes toutes les 15 secondes
-    if t%(15+3) <= (15):
-        dinosaure2.vitesse = 60/3.6
-    else:
-        dinosaure2.vitesse = 0
-
-    # dinosaure1 (proie) se déplace à destination de sa destination
-    dinosaure1.seDeplacer(destination,dt)
 
     # si la proie est dans le rayon de captue du prédateur, elle se fait manger. fin de la simulation
-    if np.linalg.norm(dinosaure2.position - dinosaure1.position) <= rayonCapture:
+    if (np.linalg.norm(predateur1.position - proie.position) <= predateur1.rayonCapture) : #or\
+        # (np.linalg.norm(predateur2.position - proie.position) <= predateur2.rayonCapture):
         print("crounch")
+        crounch = True
         # tfinal = t
         # print('tfinal',tfinal,'tmax',tmax)
-        # break
+        break
 
 
-    # ici, décommenter ce que tu veux pour différentes stratégies
+    xPos.append(proie.getX())
+    yPos.append(proie.getY())
+    xPos2.append(predateur1.getX())
+    yPos2.append(predateur1.getY())
+    # xPos3.append(predateur2.getX())
+    # yPos3.append(predateur2.getY())
+    separationVec.append(np.linalg.norm(proie.position - predateur1.position))
 
-    ## proie suicidaire : essaie de se déplacer vers l'arrière du prédateur
-    # dinosaure1.seDeplacer(dinosaure2.position - dinosaure2.vitesse*dt*dinosaure2.direction,dt)
-    ## prédateur instinctif : se déplace vers la proie
-    dinosaure2.seDeplacer(dinosaure1.position,dt)
-    ## prédateur prédictif : anticipe
-    # dinosaure2.seDeplacer(dinosaure1.position + anticipation*dinosaure1.direction*dinosaure1.vitesse*dt,dt)
 
-    xPos.append(dinosaure1.getX())
-    yPos.append(dinosaure1.getY())
-    xPos2.append(dinosaure2.getX())
-    yPos2.append(dinosaure2.getY())
+if crounch:
+    print("La proie a été mangée après ", t, " s")
+else:
+    print("La proie s'est échappée après ",t," s")
+
+
+
+
 
 
 ############################################################################
@@ -93,53 +121,100 @@ if True:
             line.set_data(data[0:2, :num])
             # line.set_properties(data[1,:num])
         return lines
+
+
     ###############################################################################
+
+
+
+
+    data = np.array([np.vstack((xPos, yPos))])
+    data2 = np.array([np.vstack((xPos2, yPos2))])
+    # data3 = np.array([np.vstack((xPos3, yPos3))])
+
+    # first print the final result
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+
+    if crounch:
+        state = " la proie est attrapée après %.2f secondes"%(t)
+    else:
+        state = " la proie s'est enfuie"
+
+    title = 'Trajectoires finales : ' + state +"\n Distance initiale : %.2f m"%(distanceInitiale)
+    ax.set_title(title)
+    ax.set_aspect('equal')
+    ax.set_xlim([min(1.15*min(data[0,0,:]),1.15*min(data2[0,0,:])), max(1.15*max(data[0,0,:]),1.15*max(data2[0,0,:]))])
+    ax.set_ylim([min(1.15*min(data[0,1,:]),1.15*min(data2[0,1,:])), max(1.15*max(data[0,1,:]),1.15*max(data2[0,1,:]))])
+    ax.set_xlabel('x (m)')
+    ax.set_ylabel('y (m)')
+
+
+
+    ax.plot(data[0,0,:],data[0,1,:],'r',label="Thescelosaurus (proie)")
+    ax.plot(data2[0,0,:],data2[0,1,:],'b',label="Velociraptor (prédateur)")
+    # ax.plot(data3[0,0,:],data3[0,1,:],'-+b')
+
+    plt.get_current_fig_manager().window.state('zoomed')
+    plt.legend()
+    plt.show()
+    fig.savefig("./figures/crounch%sstrategie90.png"%(crounch), dpi=600)
 
     # Attach 3D axis to the figure
     fig = plt.figure()
     ax = fig.add_subplot(111)
     ax.set_aspect('equal')
 
-    data = np.array([np.vstack((xPos, yPos))])
-    data2 = np.array([np.vstack((xPos2, yPos2))])
-
     n=int(np.round(tmax/dt))
     # Create line objects:
-    auv = [ax.plot(data[0][0,0:2], data[0][1,0:2],  'ro')[0]]
-    trj = [ax.plot(data[0][0,0:2], data[0][1,0:2],':r')[0]]
+    auv = [ax.plot(data[0][0,0:2], data[0][1,0:2],  'ro',label="Thescelosaurus (proie)")[0]] #markersize = 30
+    trj = [ax.plot(data[0][0,0:2], data[0][1,0:2],'r')[0]]
 
-    auv2 = [ax.plot(data2[0][0,0:2], data2[0][1,0:2],   marker=(5, 2),color='b')[0]]
-    trj2 = [ax.plot(data2[0][0,0:2], data2[0][1,0:2],':b')[0]]
+    auv2 = [ax.plot(data2[0][0,0:2], data2[0][1,0:2],   marker=(5, 2),color='b',label = "Velociraptor (prédateur)")[0]]
+    trj2 = [ax.plot(data2[0][0,0:2], data2[0][1,0:2],'b')[0]]
+    #
+    # auv3 = [ax.plot(data3[0][0,0:2], data3[0][1,0:2],   marker=(4,2),color='b')[0]]
+    # trj3 = [ax.plot(data3[0][0,0:2], data3[0][1,0:2],'b')[0]]
 
-    # ax.plot(0,300,'xr')
-    # ax.plot(destination[0],destination[1],'xr')
 
     # Setthe axes properties
+    # ,1.15*min(data3[0,0,:]) // ,1.15*max(data3[0,0,:])
     ax.set_xlim([min(1.15*min(data[0,0,:]),1.15*min(data2[0,0,:])), max(1.15*max(data[0,0,:]),1.15*max(data2[0,0,:]))])
-    ax.set_xlabel('X')
+    ax.set_xlabel('x (m)')
 
+    # ,1.15*min(data3[0,1,:]) // ,1.15*max(data3[0,1,:])
     ax.set_ylim([min(1.15*min(data[0,1,:]),1.15*min(data2[0,1,:])), max(1.15*max(data[0,1,:]),1.15*max(data2[0,1,:]))])
-    ax.set_ylabel('Y')
+    ax.set_ylabel('y (m)')
 
-    # ax.set_zlim3d([-1.0, 1.0])
-    # ax.set_zlabel('Z')
+    ax.set_axis_off()
 
-    ax.set_title('2D Test')
+    # ax.set_title('2D Test')
+
+
+    interval = 2
+    frames = n
+
 
     # Creating the Animation object
-    ani_auv = animation.FuncAnimation(fig, update_auv, n, fargs=(data, auv),
-                                      interval=1, blit=False, repeat=False) #repeat=False,
-    ani_trj = animation.FuncAnimation(fig, update_trj, n, fargs=(data, trj),
-                                      interval=1, blit=False, repeat=False) #repeat=False,
+    ani_auv = animation.FuncAnimation(fig, update_auv, frames = frames, fargs=(data, auv),
+                                      interval=interval, blit=False, repeat=False) #repeat=False,
+    ani_trj = animation.FuncAnimation(fig, update_trj, frames = frames, fargs=(data, trj),
+                                      interval=interval, blit=False, repeat=False) #repeat=False,
 
-    ani_auv2 = animation.FuncAnimation(fig, update_auv, n, fargs=(data2, auv2),
-                                      interval=1, blit=False, repeat=False) #repeat=False,
-    ani_trj2 = animation.FuncAnimation(fig, update_trj, n, fargs=(data2, trj2),
-                                      interval=1, blit=False, repeat=False) #repeat=False,
+    ani_auv2 = animation.FuncAnimation(fig, update_auv,frames = frames, fargs=(data2, auv2),
+                                      interval=interval, blit=False, repeat=False) #repeat=False,
+    ani_trj2 = animation.FuncAnimation(fig, update_trj,frames = frames, fargs=(data2, trj2),
+                                      interval=interval, blit=False, repeat=False) #repeat=False,
 
+    # ani_auv3 = animation.FuncAnimation(fig, update_auv,frames = frames, fargs=(data3, auv3),
+    #                                    interval=interval, blit=False, repeat=False) #repeat=False,
+    # ani_trj3 = animation.FuncAnimation(fig, update_trj,frames = frames, fargs=(data3, trj3),
+    #                                    interval=interval, blit=False, repeat=False) #repeat=False,
+
+    plt.get_current_fig_manager().window.state('zoomed')
+    plt.legend()
     plt.show()
 
-    #
-    # fig = plt.figure()
-    # plt.plot(angle)
-    # plt.show()
+
+
+
