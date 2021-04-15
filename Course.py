@@ -1,8 +1,6 @@
 import numpy as np
 import math
 
-from Velociraptor import Velociraptor
-from Thescelosaurus import Thescelosaurus
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
@@ -20,83 +18,141 @@ plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
 plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
 
-# minimum 15m maximum 42m ? Ziling ?
-distanceInitiale = 15 + (42-15) * np.random.rand()
-angleInitial = 2*math.pi*np.random.rand()
+from Velociraptor import Velociraptor
+from Thescelosaurus import Thescelosaurus
 
-proie = Thescelosaurus(np.array([10,10]))
+print("### DEBUT DES 300 SIMULATIONS")
+nombreSimulations = 300
+nombrePredateurs = 2
+predateurIntelligent = True
+graphiques = True
 
+# proie fuit le spredateur selon la strategie choisie : "naive","90","angleAleatoire","faceAFace"
+strategie = "90"
 
-# position initiale aléatoire
-predateur1 = Velociraptor(np.array([proie.getX() + distanceInitiale*np.cos(angleInitial),proie.getY() +
-                                    distanceInitiale*np.sin(angleInitial)]))
-# predateur2 = Velociraptor(np.array([10,20]))
+# anticipation du prédateur1:
+anticipation = 10
 
-crounch = False
+result = []
+for simu in range(nombreSimulations):
 
-proie.direction = proie.position - predateur1.position
-proie.direction = proie.direction/(np.linalg.norm(proie.direction))
-predateur1.direction = proie.position - predateur1.position
-predateur1.direction = predateur1.direction/(np.linalg.norm(predateur1.direction))
-# predateur2.direction = proie.position - predateur2.position
-# predateur2.direction = predateur2.direction/(np.linalg.norm(predateur2.direction))
+    # minimum 15m maximum 42m
+    distanceInitiale1 = 15 + (42-15) * np.random.rand()
+    angleInitial1 = 2*math.pi*np.random.rand()
+    distanceInitiale2 = distanceInitiale1
+    angleInitial2 = angleInitial1 + math.pi/2 + math.pi/2*np.random.rand()
 
-
-
-xPos = [proie.getX()]
-yPos = [proie.getY()]
-xPos2 = [predateur1.getX()]
-yPos2 = [predateur1.getY()]
-# xPos3 = [predateur2.getX()]
-# yPos3 = [predateur2.getY()]
-
-separationVec = [np.linalg.norm(proie.position - predateur1.position)]
-signeVec = []
+    proie = Thescelosaurus(np.array([10,10]))
 
 
-tmax = 15
-t = 0
-dt = 0.01
+    # position initiale aléatoire autour de la proie
+    predateur1 = Velociraptor(np.array([proie.getX() + distanceInitiale1*np.cos(angleInitial1),proie.getY() +
+                                        distanceInitiale1*np.sin(angleInitial1)]))
+    predateur2 = Velociraptor(np.array([proie.getX() + distanceInitiale2*np.cos(angleInitial2),proie.getY() +
+                                        distanceInitiale2*np.sin(angleInitial2)]))
+
+    # critère d'arrêt
+    crounch = False
+
+    # réglage initial des directions
+    if nombrePredateurs == 1:
+        proie.direction = proie.position - predateur1.position
+    elif nombrePredateurs == 2:
+        proie.direction = 2*proie.position - predateur1.position - predateur2.position
+
+    proie.direction = proie.direction/(np.linalg.norm(proie.direction))
+    predateur1.direction = proie.position - predateur1.position
+    predateur1.direction = predateur1.direction/(np.linalg.norm(predateur1.direction))
+
+    if predateurIntelligent:
+        predateur2.direction = proie.direction
+    else:
+        predateur2.direction = proie.position - predateur2.position
+    predateur2.direction = predateur2.direction/(np.linalg.norm(predateur2.direction))
+
+
+    # initialisation des vecteurs qui stockent les positions
+    xPos = [proie.getX()]
+    yPos = [proie.getY()]
+    xPos2 = [predateur1.getX()]
+    yPos2 = [predateur1.getY()]
+    xPos3 = [predateur2.getX()]
+    yPos3 = [predateur2.getY()]
+
+    separationVec = [np.linalg.norm(proie.position - predateur1.position)]
+    signeVec = []
+
+    # durée de la simulation et pas de temps
+    tmax = 15
+    t = 0
+    dt = 0.01
 
 
 
-signeFixe = 1.0
-while (t<tmax):
-    # print("---")
-    t += dt
-
-    # proie fuit le spredateur selon la strategie choisie : "naive","90","faceAFace" (pas encore codé),"angleAleatoire"
-    proie.fuir(predateur1,strategie = "90",dt = dt)
-    # print("proie.signeFixe",proie.signeFixe)
-
-    ## prédateur instinctif : se déplace vers la proie
-    predateur1.poursuivre(proie,anticipation = 3,dt = dt)
+    signeFixe = 1.0
 
 
-    # si la proie est dans le rayon de captue du prédateur, elle se fait manger. fin de la simulation
-    if (np.linalg.norm(predateur1.position - proie.position) <= predateur1.rayonCapture) : #or\
-        # (np.linalg.norm(predateur2.position - proie.position) <= predateur2.rayonCapture):
-        print("crounch")
-        crounch = True
-        # tfinal = t
-        # print('tfinal',tfinal,'tmax',tmax)
-        break
 
 
-    xPos.append(proie.getX())
-    yPos.append(proie.getY())
-    xPos2.append(predateur1.getX())
-    yPos2.append(predateur1.getY())
-    # xPos3.append(predateur2.getX())
-    # yPos3.append(predateur2.getY())
-    separationVec.append(np.linalg.norm(proie.position - predateur1.position))
+    while (t<tmax):
+
+        t += dt
+
+        # Fuite de la proie avec un ou deux prédateurs avec une stratégie établie
+        if nombrePredateurs == 1:
+            proie.fuir1(predateur1 = predateur1,strategie = strategie,dt = dt)
+        elif nombrePredateurs == 2:
+            proie.fuir2(predateur1 = predateur1,predateur2 = predateur2, strategie = strategie,dt = dt)
+
+        ## prédateur 1 prédictif : anticipe les déplacements de la proie
+        predateur1.poursuivre(proie,anticipation = anticipation,dt = dt)
 
 
-if crounch:
-    print("La proie a été mangée après ", t, " s")
-else:
-    print("La proie s'est échappée après ",t," s")
+        if nombrePredateurs == 2:
+            if predateurIntelligent :
+                # prédateur 2 intelligent : se déplace parallèlement à la proie jusqu'à ce qu'elle change de direction
+                predateur2.attendre(proie,dt)
+            else:
+                # predateur 2 moins intelligent : adopte la même stratégie que le prédateur 1
+                predateur2.poursuivre(proie,anticipation = anticipation,dt = dt)
 
+
+
+        # si la proie est dans le rayon de captue du prédateur, elle se fait manger. fin de la simulation
+
+        # le critère d'arrêt de la simulation est différent en fonction du nombre de prédateurs
+        if nombrePredateurs == 1:
+            critereArretSimulation = (np.linalg.norm(predateur1.position - proie.position) <= predateur1.rayonCapture)
+        elif nombrePredateurs == 2:
+            critereArretSimulation = ((np.linalg.norm(predateur1.position - proie.position) <= predateur1.rayonCapture)
+            or (np.linalg.norm(predateur2.position - proie.position) <= predateur2.rayonCapture))
+
+        if critereArretSimulation :
+            # print("crounch")
+            crounch = True
+            # tfinal = t
+            # print('tfinal',tfinal,'tmax',tmax)
+            break
+
+        # recensement des données
+        xPos.append(proie.getX())
+        yPos.append(proie.getY())
+        xPos2.append(predateur1.getX())
+        yPos2.append(predateur1.getY())
+        xPos3.append(predateur2.getX())
+        yPos3.append(predateur2.getY())
+
+    # affichage du résultat de la simulation dans la console
+    if crounch:
+        print("La proie a été mangée après ", t, " s")
+        result.append(1)
+    else:
+        print("La proie s'est échappée après ",t," s")
+        result.append(0)
+
+# affichage du résultat après 300 simulations
+print("result",result)
+print("nombre de succès de chasse : " , np.sum(result) , " = efficacité %2.f%s"%(100*np.sum(result)/len(result),"%"))
 
 
 
@@ -106,7 +162,7 @@ else:
 ##############################  GRAPHIQUES #################################
 ############################################################################
 
-if True:
+if graphiques:
 
     # Update AUV position for plotting:
     def update_auv(num, dataLines, lines) :
@@ -125,12 +181,14 @@ if True:
 
     ###############################################################################
 
-
-
+    if nombrePredateurs == 1:
+        couleurPredateur2 = 'white'
+    elif nombrePredateurs == 2:
+        couleurPredateur2 = 'b'
 
     data = np.array([np.vstack((xPos, yPos))])
     data2 = np.array([np.vstack((xPos2, yPos2))])
-    # data3 = np.array([np.vstack((xPos3, yPos3))])
+    data3 = np.array([np.vstack((xPos3, yPos3))])
 
     # first print the final result
     fig = plt.figure()
@@ -141,11 +199,13 @@ if True:
     else:
         state = " la proie s'est enfuie"
 
-    title = 'Trajectoires finales : ' + state +"\n Distance initiale : %.2f m"%(distanceInitiale)
+    title = 'Trajectoires finales : ' + state +"\n Distance initiale : %.2f m"%(distanceInitiale1)
     ax.set_title(title)
     ax.set_aspect('equal')
-    ax.set_xlim([min(1.15*min(data[0,0,:]),1.15*min(data2[0,0,:])), max(1.15*max(data[0,0,:]),1.15*max(data2[0,0,:]))])
-    ax.set_ylim([min(1.15*min(data[0,1,:]),1.15*min(data2[0,1,:])), max(1.15*max(data[0,1,:]),1.15*max(data2[0,1,:]))])
+    ax.set_xlim([min(1.15*min(data[0,0,:]),1.15*min(data2[0,0,:]),1.15*min(data3[0,0,:])),
+                 max(1.15*max(data[0,0,:]),1.15*max(data2[0,0,:]),1.15*max(data3[0,0,:]))])
+    ax.set_ylim([min(1.15*min(data[0,1,:]),1.15*min(data2[0,1,:]),1.15*min(data3[0,1,:])),
+                 max(1.15*max(data[0,1,:]),1.15*max(data2[0,1,:]),1.15*max(data3[0,1,:]))])
     ax.set_xlabel('x (m)')
     ax.set_ylabel('y (m)')
 
@@ -153,12 +213,12 @@ if True:
 
     ax.plot(data[0,0,:],data[0,1,:],'r',label="Thescelosaurus (proie)")
     ax.plot(data2[0,0,:],data2[0,1,:],'b',label="Velociraptor (prédateur)")
-    # ax.plot(data3[0,0,:],data3[0,1,:],'-+b')
+    ax.plot(data3[0,0,:],data3[0,1,:],color = couleurPredateur2)
 
     plt.get_current_fig_manager().window.state('zoomed')
     plt.legend()
     plt.show()
-    fig.savefig("./figures/crounch%sstrategie90.png"%(crounch), dpi=600)
+    # fig.savefig("./figures/crounch%sstrategie%s2predateursIntelligents.png"%(crounch,strategie), dpi=600)
 
     # Attach 3D axis to the figure
     fig = plt.figure()
@@ -172,18 +232,20 @@ if True:
 
     auv2 = [ax.plot(data2[0][0,0:2], data2[0][1,0:2],   marker=(5, 2),color='b',label = "Velociraptor (prédateur)")[0]]
     trj2 = [ax.plot(data2[0][0,0:2], data2[0][1,0:2],'b')[0]]
-    #
-    # auv3 = [ax.plot(data3[0][0,0:2], data3[0][1,0:2],   marker=(4,2),color='b')[0]]
-    # trj3 = [ax.plot(data3[0][0,0:2], data3[0][1,0:2],'b')[0]]
+
+    auv3 = [ax.plot(data3[0][0,0:2], data3[0][1,0:2],   marker=(4,2),color=couleurPredateur2)[0]]
+    trj3 = [ax.plot(data3[0][0,0:2], data3[0][1,0:2],color=couleurPredateur2)[0]]
 
 
     # Setthe axes properties
     # ,1.15*min(data3[0,0,:]) // ,1.15*max(data3[0,0,:])
-    ax.set_xlim([min(1.15*min(data[0,0,:]),1.15*min(data2[0,0,:])), max(1.15*max(data[0,0,:]),1.15*max(data2[0,0,:]))])
+    ax.set_xlim([min(1.15*min(data[0,0,:]),1.15*min(data2[0,0,:]),1.15*min(data3[0,0,:])),
+                 max(1.15*max(data[0,0,:]),1.15*max(data2[0,0,:]),1.15*max(data3[0,0,:]))])
     ax.set_xlabel('x (m)')
 
     # ,1.15*min(data3[0,1,:]) // ,1.15*max(data3[0,1,:])
-    ax.set_ylim([min(1.15*min(data[0,1,:]),1.15*min(data2[0,1,:])), max(1.15*max(data[0,1,:]),1.15*max(data2[0,1,:]))])
+    ax.set_ylim([min(1.15*min(data[0,1,:]),1.15*min(data2[0,1,:]),1.15*min(data3[0,1,:])),
+                 max(1.15*max(data[0,1,:]),1.15*max(data2[0,1,:]),1.15*max(data3[0,1,:]))])
     ax.set_ylabel('y (m)')
 
     ax.set_axis_off()
@@ -206,14 +268,18 @@ if True:
     ani_trj2 = animation.FuncAnimation(fig, update_trj,frames = frames, fargs=(data2, trj2),
                                       interval=interval, blit=False, repeat=False) #repeat=False,
 
-    # ani_auv3 = animation.FuncAnimation(fig, update_auv,frames = frames, fargs=(data3, auv3),
-    #                                    interval=interval, blit=False, repeat=False) #repeat=False,
-    # ani_trj3 = animation.FuncAnimation(fig, update_trj,frames = frames, fargs=(data3, trj3),
-    #                                    interval=interval, blit=False, repeat=False) #repeat=False,
+    ani_auv3 = animation.FuncAnimation(fig, update_auv,frames = frames, fargs=(data3, auv3),
+                                       interval=interval, blit=False, repeat=False) #repeat=False,
+    ani_trj3 = animation.FuncAnimation(fig, update_trj,frames = frames, fargs=(data3, trj3),
+                                       interval=interval, blit=False, repeat=False) #repeat=False,
 
     plt.get_current_fig_manager().window.state('zoomed')
     plt.legend()
     plt.show()
+
+    # fig = plt.figure()
+    # plt.plot(separationVec)
+    # plt.show()
 
 
 
